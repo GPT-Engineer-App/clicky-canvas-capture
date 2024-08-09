@@ -4,6 +4,24 @@ import { Input } from '@/components/ui/input';
 import * as htmlToImage from 'html-to-image';
 import { Square, Type } from 'lucide-react';
 
+const handleMouseMove = (e, elements, selectedElement, startPos, setElements, setStartPos) => {
+  if (selectedElement !== null) {
+    const dx = e.clientX - startPos.x;
+    const dy = e.clientY - startPos.y;
+    setElements(elements.map((el, index) => 
+      index === selectedElement 
+        ? { ...el, x: el.x + dx, y: el.y + dy }
+        : el
+    ));
+    setStartPos({ x: e.clientX, y: e.clientY });
+  }
+};
+
+const handleMouseUp = (setIsMoving, setSelectedElement) => {
+  setIsMoving(false);
+  setSelectedElement(null);
+};
+
 const Index = () => {
   const [showCanvas, setShowCanvas] = useState(false);
   const [elements, setElements] = useState([]);
@@ -61,13 +79,19 @@ const Index = () => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isMoving, selectedElement]);
+    if (canvas) {
+      const mouseMoveHandler = (e) => handleMouseMove(e, elements, selectedElement, startPos, setElements, setStartPos);
+      const mouseUpHandler = () => handleMouseUp(setIsMoving, setSelectedElement);
+      
+      canvas.addEventListener('mousemove', mouseMoveHandler);
+      canvas.addEventListener('mouseup', mouseUpHandler);
+      
+      return () => {
+        canvas.removeEventListener('mousemove', mouseMoveHandler);
+        canvas.removeEventListener('mouseup', mouseUpHandler);
+      };
+    }
+  }, [elements, selectedElement, startPos]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
