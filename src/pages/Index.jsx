@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import * as htmlToImage from 'html-to-image';
+import { Square, Type } from 'lucide-react';
 
 const Index = () => {
   const [showCanvas, setShowCanvas] = useState(false);
+  const [elements, setElements] = useState([]);
+  const [selectedElement, setSelectedElement] = useState(null);
+  const [isMoving, setIsMoving] = useState(false);
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef(null);
 
   const handleButtonClick = () => {
     if (showCanvas) {
@@ -20,17 +27,102 @@ const Index = () => {
     setShowCanvas(!showCanvas);
   };
 
+  const addRectangle = () => {
+    setElements([...elements, { type: 'rectangle', x: 50, y: 50, width: 100, height: 100, color: '#' + Math.floor(Math.random()*16777215).toString(16) }]);
+  };
+
+  const addText = () => {
+    setElements([...elements, { type: 'text', x: 50, y: 50, text: 'New Text', fontSize: 16, color: '#000000' }]);
+  };
+
+  const handleMouseDown = (e, index) => {
+    setSelectedElement(index);
+    setIsMoving(true);
+    setStartPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseMove = (e) => {
+    if (isMoving && selectedElement !== null) {
+      const dx = e.clientX - startPos.x;
+      const dy = e.clientY - startPos.y;
+      setElements(elements.map((el, index) => 
+        index === selectedElement 
+          ? { ...el, x: el.x + dx, y: el.y + dy }
+          : el
+      ));
+      setStartPos({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsMoving(false);
+    setSelectedElement(null);
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isMoving, selectedElement]);
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100" id="capture-area">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4">Canvas Overlay Demo</h1>
-        <p className="text-xl text-gray-600">Click the button to toggle the canvas overlay</p>
+        <h1 className="text-4xl font-bold mb-4">Canvas Editor Demo</h1>
+        <p className="text-xl text-gray-600">Add shapes and text, then capture the image</p>
       </div>
-      <Button onClick={handleButtonClick}>
-        {showCanvas ? 'Capture and Hide Canvas' : 'Show Canvas'}
-      </Button>
+      <div className="flex space-x-4 mb-4">
+        <Button onClick={handleButtonClick}>
+          {showCanvas ? 'Capture and Hide Canvas' : 'Show Canvas'}
+        </Button>
+        {showCanvas && (
+          <>
+            <Button onClick={addRectangle}><Square className="mr-2 h-4 w-4" /> Add Rectangle</Button>
+            <Button onClick={addText}><Type className="mr-2 h-4 w-4" /> Add Text</Button>
+          </>
+        )}
+      </div>
       {showCanvas && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 pointer-events-none" />
+        <div 
+          id="capture-area"
+          ref={canvasRef}
+          className="w-[800px] h-[600px] border-2 border-gray-300 relative bg-white"
+        >
+          {elements.map((element, index) => (
+            element.type === 'rectangle' ? (
+              <div
+                key={index}
+                style={{
+                  position: 'absolute',
+                  left: element.x,
+                  top: element.y,
+                  width: element.width,
+                  height: element.height,
+                  backgroundColor: element.color,
+                }}
+                onMouseDown={(e) => handleMouseDown(e, index)}
+              />
+            ) : (
+              <div
+                key={index}
+                style={{
+                  position: 'absolute',
+                  left: element.x,
+                  top: element.y,
+                  fontSize: element.fontSize,
+                  color: element.color,
+                }}
+                onMouseDown={(e) => handleMouseDown(e, index)}
+              >
+                {element.text}
+              </div>
+            )
+          ))}
+        </div>
       )}
     </div>
   );
