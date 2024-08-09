@@ -1,15 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import * as htmlToImage from 'html-to-image';
 import { Square, Type } from 'lucide-react';
-import { Canvas, Frame, Rectangle, Text } from 'react-figma-plugin-ds';
-import 'react-figma-plugin-ds/figma-plugin-ds.css';
 
-const handleMouseMove = (e, elements, selectedElement, startPos, setElements, setStartPos) => {
+const handleMouseMove = (e) => {
   if (selectedElement !== null) {
     const dx = e.clientX - startPos.x;
     const dy = e.clientY - startPos.y;
-    setElements(elements.map((el, index) => 
+    setElements(prevElements => prevElements.map((el, index) => 
       index === selectedElement 
         ? { ...el, x: el.x + dx, y: el.y + dy }
         : el
@@ -69,32 +67,36 @@ const Index = () => {
         )}
       </div>
       {editMode && (
-        <Canvas id="capture-area" ref={canvasRef} width={800} height={600}>
-          <Frame width={800} height={600}>
-            {elements.map((element, index) => (
-              element.type === 'rectangle' ? (
-                <Rectangle
-                  key={index}
-                  x={element.x}
-                  y={element.y}
-                  width={element.width}
-                  height={element.height}
-                  fill={element.fill}
-                />
-              ) : (
-                <Text
-                  key={index}
-                  x={element.x}
-                  y={element.y}
-                  fontSize={element.fontSize}
-                  fill={element.fill}
-                >
-                  {element.content}
-                </Text>
-              )
-            ))}
-          </Frame>
-        </Canvas>
+        <div id="capture-area" ref={canvasRef} className="w-[800px] h-[600px] relative bg-white">
+          {elements.map((element, index) => (
+            element.type === 'rectangle' ? (
+              <div
+                key={index}
+                style={{
+                  position: 'absolute',
+                  left: element.x,
+                  top: element.y,
+                  width: element.width,
+                  height: element.height,
+                  backgroundColor: element.fill
+                }}
+              />
+            ) : (
+              <div
+                key={index}
+                style={{
+                  position: 'absolute',
+                  left: element.x,
+                  top: element.y,
+                  fontSize: element.fontSize,
+                  color: element.fill
+                }}
+              >
+                {element.content}
+              </div>
+            )
+          ))}
+        </div>
       )}
     </div>
   );
